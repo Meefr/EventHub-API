@@ -3,7 +3,7 @@ const router = express.Router();
 const eventController = require('../controllers/event.controller');
 const upload = require('../middlewares/upload');
 const { protect, authorize } = require('../middlewares/auth');
-const validators = require('../validators');
+const validators = require('../utils/validators');
 
 router.get('/', validators.pagination, validators.validate, eventController.getEvents);
 router.get('/:id', validators.validateId, validators.validate, eventController.getEvent);

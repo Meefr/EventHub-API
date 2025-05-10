@@ -6,6 +6,7 @@ dotenv.config();
 
 const app = require('./app');
 const connectDB = require('./config/db');
+
 const logger = require('./utils/logger');
 
 // Connect to database

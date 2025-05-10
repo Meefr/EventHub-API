@@ -1,0 +1,57 @@
+{
+    "auth": {
+      "register_success": "تم تسجيل المستخدم بنجاح",
+      "login_success": "تم تسجيل الدخول بنجاح",
+      "invalid_credentials": "بيانات الاعتماد غير صالحة",
+      "email_in_use": "البريد الإلكتروني مستخدم بالفعل",
+      "user_not_found": "المستخدم غير موجود",
+      "logout_success": "تم تسجيل الخروج بنجاح",
+      "password_updated": "تم تحديث كلمة المرور بنجاح",
+      "details_updated": "تم تحديث تفاصيل المستخدم بنجاح"
+    },
+    "events": {
+      "not_found": "الفعالية غير موجودة",
+      "created": "تم إنشاء الفعالية بنجاح",
+      "updated": "تم تحديث الفعالية بنجاح",
+      "deleted": "تم حذف الفعالية بنجاح",
+      "image_uploaded": "تم تحميل صورة الفعالية بنجاح",
+      "no_image": "يرجى تحميل ملف",
+      "invalid_image": "يُسمح فقط بملفات الصور",
+      "has_bookings": "لا يمكن حذف الفعالية مع وجود حجوزات نشطة",
+      "unauthorized_update": "غير مصرح لك بتحديث هذه الفعالية",
+      "unauthorized_delete": "غير مصرح لك بحذف هذه الفعالية"
+    },
+    "bookings": {
+      "created": "تم إنشاء الحجز بنجاح",
+      "not_found": "الحجز غير موجود",
+      "cancelled": "تم إلغاء الحجز بنجاح",
+      "already_cancelled": "تم إلغاء الحجز بالفعل",
+      "unauthorized_access": "غير مصرح لك بالوصول إلى هذا الحجز",
+      "tickets_unavailable": "لا توجد تذاكر كافية متاحة",
+      "invalid_ticket_count": "يجب أن يكون عدد التذاكر بين 1 و 10"
+    },
+    "users": {
+      "not_found": "المستخدم غير موجود",
+      "updated": "تم تحديث المستخدم بنجاح",
+      "deleted": "تم حذف المستخدم بنجاح",
+      "image_uploaded": "تم تحميل صورة الملف الشخصي بنجاح",
+      "unauthorized_access": "وصول غير مصرح به"
+    },
+    "validation": {
+      "required": "{{field}} مطلوب",
+      "invalid_email": "يرجى تقديم بريد إلكتروني صالح",
+      "password_length": "يجب أن تتكون كلمة المرور من 6 أحرف على الأقل",
+      "name_length": "لا يمكن أن يزيد الاسم عن 50 حرفًا",
+      "invalid_id": "تنسيق معرف غير صالح",
+      "invalid_date": "تنسيق تاريخ غير صالح",
+      "invalid_capacity": "يجب أن تكون السعة على الأقل 1",
+      "invalid_price": "يجب أن يكون السعر رقمًا موجبًا"
+    },
+    "common": {
+      "server_error": "خطأ في الخادم",
+      "not_found": "الملف غير موجود",
+      "forbidden": "ممنوع",
+      "unauthorized": "غير مصرح",
+      "welcome": "مرحبًا بكم في نظام إدارة الفعاليات"
+    }
+  }

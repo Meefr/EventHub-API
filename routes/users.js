@@ -3,7 +3,7 @@ const router = express.Router();
 const userController = require('../controllers/user.controller');
 const upload = require('../middlewares/upload');
 const { protect, authorize } = require('../middlewares/auth');
-const validators = require('../validators');
+const validators = require('../utils/validators');  
 
 router.use(protect);
 router.use(authorize('admin'));

@@ -1,0 +1,57 @@
+{
+    "auth": {
+      "register_success": "User registered successfully",
+      "login_success": "Login successful",
+      "invalid_credentials": "Invalid credentials",
+      "email_in_use": "Email already in use",
+      "user_not_found": "User not found",
+      "logout_success": "User logged out successfully",
+      "password_updated": "Password updated successfully",
+      "details_updated": "User details updated successfully"
+    },
+    "events": {
+      "not_found": "Event not found",
+      "created": "Event created successfully",
+      "updated": "Event updated successfully",
+      "deleted": "Event deleted successfully",
+      "image_uploaded": "Event image uploaded successfully",
+      "no_image": "Please upload a file",
+      "invalid_image": "Only image files are allowed",
+      "has_bookings": "Cannot delete event with active bookings",
+      "unauthorized_update": "You are not authorized to update this event",
+      "unauthorized_delete": "You are not authorized to delete this event"
+    },
+    "bookings": {
+      "created": "Booking created successfully",
+      "not_found": "Booking not found",
+      "cancelled": "Booking cancelled successfully",
+      "already_cancelled": "Booking is already cancelled",
+      "unauthorized_access": "You are not authorized to access this booking",
+      "tickets_unavailable": "Not enough tickets available",
+      "invalid_ticket_count": "Ticket count must be between 1 and 10"
+    },
+    "users": {
+      "not_found": "User not found",
+      "updated": "User updated successfully",
+      "deleted": "User deleted successfully",
+      "image_uploaded": "Profile image uploaded successfully",
+      "unauthorized_access": "Unauthorized access"
+    },
+    "validation": {
+      "required": "{{field}} is required",
+      "invalid_email": "Please provide a valid email",
+      "password_length": "Password must be at least 6 characters",
+      "name_length": "Name cannot be more than 50 characters",
+      "invalid_id": "Invalid ID format",
+      "invalid_date": "Invalid date format",
+      "invalid_capacity": "Capacity must be at least 1",
+      "invalid_price": "Price must be a positive number"
+    },
+    "common": {
+      "server_error": "Server Error",
+      "not_found": "Resource not found",
+      "forbidden": "Forbidden",
+      "unauthorized": "Unauthorized",
+      "welcome": "Welcome to Event Management API"
+    }
+  }
