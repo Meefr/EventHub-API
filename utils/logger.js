@@ -1,6 +1,18 @@
 const winston = require('winston');
+const fs = require('fs');
+const path = require('path');
 
-// Define logger configuration
+// Ensure logs directory exists
+const logDir = 'logs';
+if (!fs.existsSync(logDir)) {
+  try {
+    fs.mkdirSync(logDir, { recursive: true });
+  } catch (err) {
+    console.error('Could not create logs directory:', err);
+    process.exit(1);
+  }
+}
+
 const logger = winston.createLogger({
   level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
   format: winston.format.combine(
@@ -13,14 +25,17 @@ const logger = winston.createLogger({
   ),
   defaultMeta: { service: 'event-management-api' },
   transports: [
-    // Write all logs with level 'error' and below to 'error.log'
-    new winston.transports.File({ filename: 'logs/error.log', level: 'error' }),
-    // Write all logs with level 'info' and below to 'combined.log'
-    new winston.transports.File({ filename: 'logs/combined.log' })
+    new winston.transports.File({ 
+      filename: path.join(logDir, 'error.log'), 
+      level: 'error' 
+    }),
+    new winston.transports.File({ 
+      filename: path.join(logDir, 'combined.log') 
+    })
   ]
 });
 
-// If we're not in production, log to the console as well
+// Console logging in development
 if (process.env.NODE_ENV !== 'production') {
   logger.add(new winston.transports.Console({
     format: winston.format.combine(
