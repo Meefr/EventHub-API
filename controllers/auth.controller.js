@@ -175,7 +175,7 @@ exports.register = async (req, res, next) => {
     const { name, email, password, role } = req.body;
 
     // Check if user exists
-    const userExists = await User.findOne({ email });
+    const userExists = await User.findOne({ email });    
     if (userExists) {
       return next(new ErrorResponse('Email already registered', 400));
     }
