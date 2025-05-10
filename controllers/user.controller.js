@@ -1,7 +1,7 @@
 const { validationResult } = require('express-validator');
 const User = require('../models/User');
 const { ErrorResponse } = require('../middlewares/errorHandler');
-const logger = require('../utils/logger');
+// const logger = require('../utils/logger');
 
 /**
  * @desc    Get all users (admin only)

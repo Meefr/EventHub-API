@@ -157,7 +157,7 @@ const { validationResult } = require('express-validator');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const { ErrorResponse } = require('../middlewares/errorHandler');
-const logger = require('../utils/logger');
+// const logger = require('../utils/logger');
 
 /**
  * @desc    Register user

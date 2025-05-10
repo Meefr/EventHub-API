@@ -1,4 +1,4 @@
-const logger = require('../utils/logger');
+// const logger = require('../utils/logger');
 
 /**
  * Custom error response class
@@ -18,7 +18,8 @@ const errorHandler = (err, req, res, next) => {
   error.message = err.message;
 
   // Log to console for dev
-  logger.error(err);
+  // logger.error(err);
+  console.error(err);
 
   // Mongoose bad ObjectId
   if (err.name === 'CastError') {

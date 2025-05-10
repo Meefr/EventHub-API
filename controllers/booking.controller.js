@@ -2,7 +2,7 @@ const { validationResult } = require('express-validator');
 const Booking = require('../models/Booking');
 const Event = require('../models/Event');
 const { ErrorResponse } = require('../middlewares/errorHandler');
-const logger = require('../utils/logger');
+// const logger = require('../utils/logger');
 
 /**
  * @desc    Create new booking

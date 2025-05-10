@@ -6,7 +6,7 @@ const Booking = require('../models/Booking');
 const Category = require('../models/Category');
 const Tag = require('../models/Tag');
 const { ErrorResponse } = require('../middlewares/errorHandler');
-const logger = require('../utils/logger');
+// const logger = require('../utils/logger');
 
 /**
  * @desc    Get all events
