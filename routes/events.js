@@ -10,11 +10,13 @@ router.get('/:id', validators.validateId, validators.validate, eventController.g
 router.get('/organizer/:id', validators.validateId, validators.validate, eventController.getEventsByOrganizer);
 router.get('/featured', eventController.getFeaturedEvents);
 router.get('/upcoming', eventController.getUpcomingEvents);
-
+router.get('/categories', eventController.getEventCategories); 
 // Protected routes
 router.post('/', protect, authorize('organizer', 'admin'), validators.createEvent, validators.validate, eventController.createEvent);
 router.put('/:id', protect, validators.validateId, validators.updateEvent, validators.validate, eventController.updateEvent);
 router.delete('/:id', protect, validators.validateId, validators.validate, eventController.deleteEvent);
 router.put('/:id/image', protect, validators.validateId, upload.single('image'), eventController.eventImageUpload);
+
+router.post('/categories', protect, authorize('admin'), validators.createCategory, validators.validate, eventController.createCategory);
 
 module.exports = router;

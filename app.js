@@ -38,6 +38,9 @@ i18next.init({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+console.log(process.env.CLIENT_URL);
+
+
 // Enable CORS
 app.use(
   cors({

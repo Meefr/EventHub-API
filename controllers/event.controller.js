@@ -1,11 +1,11 @@
-const { validationResult } = require('express-validator');
-const path = require('path');
-const fs = require('fs');
-const Event = require('../models/Event');
-const Booking = require('../models/Booking');
-const Category = require('../models/Category');
-const Tag = require('../models/Tag');
-const { ErrorResponse } = require('../middlewares/errorHandler');
+const { body, validationResult } = require("express-validator");
+const path = require("path");
+const fs = require("fs");
+const Event = require("../models/Event");
+const Booking = require("../models/Booking");
+const Category = require("../models/Category");
+const Tag = require("../models/Tag");
+const { ErrorResponse } = require("../middlewares/errorHandler");
 // const logger = require('../utils/logger');
 
 /**
@@ -19,42 +19,45 @@ exports.getEvents = async (req, res, next) => {
     const reqQuery = { ...req.query };
 
     // Fields to exclude from filtering
-    const removeFields = ['select', 'sort', 'page', 'limit', 'search'];
-    removeFields.forEach(param => delete reqQuery[param]);
+    const removeFields = ["select", "sort", "page", "limit", "search"];
+    removeFields.forEach((param) => delete reqQuery[param]);
 
     // Create query string
     let queryStr = JSON.stringify(reqQuery);
 
     // Create operators ($gt, $gte, etc)
-    queryStr = queryStr.replace(/\\b(gt|gte|lt|lte|in)\\b/g, match => `$${match}`);
+    queryStr = queryStr.replace(
+      /\\b(gt|gte|lt|lte|in)\\b/g,
+      (match) => `$${match}`
+    );
 
     // Finding resources
     let query = Event.find(JSON.parse(queryStr));
 
     // Handle search
     if (req.query.search) {
-      const searchRegex = new RegExp(req.query.search, 'i');
+      const searchRegex = new RegExp(req.query.search, "i");
       query = query.find({
         $or: [
           { title: searchRegex },
           { description: searchRegex },
-          { location: searchRegex }
-        ]
+          { location: searchRegex },
+        ],
       });
     }
 
     // Select fields
     if (req.query.select) {
-      const fields = req.query.select.split(',').join(' ');
+      const fields = req.query.select.split(",").join(" ");
       query = query.select(fields);
     }
 
     // Sort
     if (req.query.sort) {
-      const sortBy = req.query.sort.split(',').join(' ');
+      const sortBy = req.query.sort.split(",").join(" ");
       query = query.sort(sortBy);
     } else {
-      query = query.sort('-date');
+      query = query.sort("-date");
     }
 
     // Pagination
@@ -67,9 +70,9 @@ exports.getEvents = async (req, res, next) => {
 
     // Populate related data
     query = query.populate([
-      { path: 'organizer', select: 'name email' },
-      { path: 'category', select: 'name' },
-      { path: 'tags', select: 'name' }
+      { path: "organizer", select: "name email" },
+      { path: "category", select: "name" },
+      { path: "tags", select: "name" },
     ]);
 
     // Executing query
@@ -82,14 +85,14 @@ exports.getEvents = async (req, res, next) => {
     if (endIndex < total) {
       pagination.next = {
         page: page + 1,
-        limit
+        limit,
       };
     }
 
     if (startIndex > 0) {
       pagination.prev = {
         page: page - 1,
-        limit
+        limit,
       };
     }
 
@@ -97,7 +100,7 @@ exports.getEvents = async (req, res, next) => {
       success: true,
       count: events.length,
       pagination,
-      data: events
+      data: events,
     });
   } catch (err) {
     next(err);
@@ -111,20 +114,21 @@ exports.getEvents = async (req, res, next) => {
  */
 exports.getEvent = async (req, res, next) => {
   try {
-    const event = await Event.findById(req.params.id)
-      .populate([
-        { path: 'organizer', select: 'name email' },
-        { path: 'category', select: 'name description' },
-        { path: 'tags', select: 'name' }
-      ]);
+    const event = await Event.findById(req.params.id).populate([
+      { path: "organizer", select: "name email" },
+      { path: "category", select: "name description" },
+      { path: "tags", select: "name" },
+    ]);
 
     if (!event) {
-      return next(new ErrorResponse(`Event not found with id of ${req.params.id}`, 404));
+      return next(
+        new ErrorResponse(`Event not found with id of ${req.params.id}`, 404)
+      );
     }
 
     res.status(200).json({
       success: true,
-      data: event
+      data: event,
     });
   } catch (err) {
     next(err);
@@ -146,22 +150,22 @@ exports.createEvent = async (req, res, next) => {
 
     // Add user to req.body as organizer
     req.body.organizer = req.user.id;
-    
+
     // Handle category
     if (req.body.category) {
       const category = await Category.findById(req.body.category);
       if (!category) {
-        return next(new ErrorResponse('Category not found', 404));
+        return next(new ErrorResponse("Category not found", 404));
       }
     }
-    
+
     // Handle tags
     if (req.body.tags) {
       // Convert string of IDs to array
-      if (typeof req.body.tags === 'string') {
-        req.body.tags = req.body.tags.split(',');
+      if (typeof req.body.tags === "string") {
+        req.body.tags = req.body.tags.split(",");
       }
-      
+
       // Verify all tags exist
       for (const tagId of req.body.tags) {
         const tag = await Tag.findById(tagId);
@@ -175,7 +179,7 @@ exports.createEvent = async (req, res, next) => {
 
     res.status(201).json({
       success: true,
-      data: event
+      data: event,
     });
   } catch (err) {
     next(err);
@@ -192,13 +196,15 @@ exports.updateEvent = async (req, res, next) => {
     let event = await Event.findById(req.params.id);
 
     if (!event) {
-      return next(new ErrorResponse(`Event not found with id of ${req.params.id}`, 404));
+      return next(
+        new ErrorResponse(`Event not found with id of ${req.params.id}`, 404)
+      );
     }
 
     // Make sure user is event organizer or admin
     if (
       event.organizer.toString() !== req.user.id &&
-      req.user.role !== 'admin'
+      req.user.role !== "admin"
     ) {
       return next(
         new ErrorResponse(
@@ -207,14 +213,14 @@ exports.updateEvent = async (req, res, next) => {
         )
       );
     }
-    
+
     // Handle tags
     if (req.body.tags) {
       // Convert string of IDs to array
-      if (typeof req.body.tags === 'string') {
-        req.body.tags = req.body.tags.split(',');
+      if (typeof req.body.tags === "string") {
+        req.body.tags = req.body.tags.split(",");
       }
-      
+
       // Verify all tags exist
       for (const tagId of req.body.tags) {
         const tag = await Tag.findById(tagId);
@@ -226,12 +232,12 @@ exports.updateEvent = async (req, res, next) => {
 
     event = await Event.findByIdAndUpdate(req.params.id, req.body, {
       new: true,
-      runValidators: true
+      runValidators: true,
     });
 
     res.status(200).json({
       success: true,
-      data: event
+      data: event,
     });
   } catch (err) {
     next(err);
@@ -248,13 +254,15 @@ exports.deleteEvent = async (req, res, next) => {
     const event = await Event.findById(req.params.id);
 
     if (!event) {
-      return next(new ErrorResponse(`Event not found with id of ${req.params.id}`, 404));
+      return next(
+        new ErrorResponse(`Event not found with id of ${req.params.id}`, 404)
+      );
     }
 
     // Make sure user is event organizer or admin
     if (
       event.organizer.toString() !== req.user.id &&
-      req.user.role !== 'admin'
+      req.user.role !== "admin"
     ) {
       return next(
         new ErrorResponse(
@@ -263,15 +271,12 @@ exports.deleteEvent = async (req, res, next) => {
         )
       );
     }
-    
+
     // Check if event has bookings
     const bookings = await Booking.find({ event: req.params.id });
     if (bookings.length > 0) {
       return next(
-        new ErrorResponse(
-          `Cannot delete event with active bookings`,
-          400
-        )
+        new ErrorResponse(`Cannot delete event with active bookings`, 400)
       );
     }
 
@@ -279,7 +284,7 @@ exports.deleteEvent = async (req, res, next) => {
 
     res.status(200).json({
       success: true,
-      data: {}
+      data: {},
     });
   } catch (err) {
     next(err);
@@ -296,13 +301,15 @@ exports.eventImageUpload = async (req, res, next) => {
     const event = await Event.findById(req.params.id);
 
     if (!event) {
-      return next(new ErrorResponse(`Event not found with id of ${req.params.id}`, 404));
+      return next(
+        new ErrorResponse(`Event not found with id of ${req.params.id}`, 404)
+      );
     }
 
     // Make sure user is event organizer or admin
     if (
       event.organizer.toString() !== req.user.id &&
-      req.user.role !== 'admin'
+      req.user.role !== "admin"
     ) {
       return next(
         new ErrorResponse(
@@ -313,7 +320,7 @@ exports.eventImageUpload = async (req, res, next) => {
     }
 
     if (!req.file) {
-      return next(new ErrorResponse('Please upload a file', 400));
+      return next(new ErrorResponse("Please upload a file", 400));
     }
 
     // Update event with filename
@@ -322,7 +329,7 @@ exports.eventImageUpload = async (req, res, next) => {
 
     res.status(200).json({
       success: true,
-      data: event
+      data: event,
     });
   } catch (err) {
     next(err);
@@ -336,16 +343,15 @@ exports.eventImageUpload = async (req, res, next) => {
  */
 exports.getEventsByOrganizer = async (req, res, next) => {
   try {
-    const events = await Event.find({ organizer: req.params.id })
-      .populate([
-        { path: 'category', select: 'name' },
-        { path: 'tags', select: 'name' }
-      ]);
+    const events = await Event.find({ organizer: req.params.id }).populate([
+      { path: "category", select: "name" },
+      { path: "tags", select: "name" },
+    ]);
 
     res.status(200).json({
       success: true,
       count: events.length,
-      data: events
+      data: events,
     });
   } catch (err) {
     next(err);
@@ -362,14 +368,14 @@ exports.getFeaturedEvents = async (req, res, next) => {
     const events = await Event.find({ isFeatured: true, isPublished: true })
       .limit(6)
       .populate([
-        { path: 'organizer', select: 'name' },
-        { path: 'category', select: 'name' }
+        { path: "organizer", select: "name" },
+        { path: "category", select: "name" },
       ]);
 
     res.status(200).json({
       success: true,
       count: events.length,
-      data: events
+      data: events,
     });
   } catch (err) {
     next(err);
@@ -385,21 +391,58 @@ exports.getUpcomingEvents = async (req, res, next) => {
   try {
     const events = await Event.find({
       date: { $gte: new Date() },
-      isPublished: true
+      isPublished: true,
     })
-      .sort('date')
+      .sort("date")
       .limit(10)
       .populate([
-        { path: 'organizer', select: 'name' },
-        { path: 'category', select: 'name' }
+        { path: "organizer", select: "name" },
+        { path: "category", select: "name" },
       ]);
 
     res.status(200).json({
       success: true,
       count: events.length,
-      data: events
+      data: events,
     });
   } catch (err) {
     next(err);
   }
 };
+
+/**
+ * @desc    Get all categories
+ * @route   GET /api/v1/events/categories
+ * @access  Public
+ */
+exports.getEventCategories = async (req, res, next) => {
+  try {
+    const categories = await Category.find();
+
+    res.status(200).json({
+      success: true,
+      count: categories.length,
+      data: categories,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.createCategory = [
+  body("name")
+    .notEmpty()
+    .withMessage("Category name is required")
+    .isString()
+    .trim()
+    .isLength({ max: 50 })
+    .withMessage("Category name cannot be more than 50 characters"),
+  // Add validation for translations if needed
+  (req, res, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+    next();
+  },
+];
