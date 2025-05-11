@@ -16,6 +16,7 @@ const authRoutes = require("./routes/auth");
 const eventRoutes = require("./routes/events");
 const bookingRoutes = require("./routes/bookings");
 const userRoutes = require("./routes/users");
+const connectDB = require("./config/db");
 
 // Initialize express
 const app = express();
@@ -92,12 +93,10 @@ app.use((req, res, next) => {
 // Error handling middleware
 app.use(errorHandler);
 
-// app.listen(process.env.PORT || 5000, () => {
+// app.listen(process.env.PORT, () => {
+//   connectDB();
 //   console.log(
-//     `Server running in ${process.env.NODE_ENV} mode on port ${
-//       process.env.PORT || 5000
-//     }`
+//     `Server running in ${process.env.NODE_ENV} mode on port ${process.env.PORT}`
 //   );
 // });
-
 module.exports = app;

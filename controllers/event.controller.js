@@ -429,20 +429,66 @@ exports.getEventCategories = async (req, res, next) => {
   }
 };
 
+// exports.createCategory = [
+//   body("name")
+//     .notEmpty()
+//     .withMessage("Category name is required")
+//     .isString()
+//     .trim()
+//     .isLength({ max: 50 })
+//     .withMessage("Category name cannot be more than 50 characters"),
+//   // Add validation for translations if needed
+//   (req, res, next) => {
+//     const errors = validationResult(req);
+//     if (!errors.isEmpty()) {
+//       return res.status(400).json({ errors: errors.array() });
+//     }
+//     next();
+//   },
+// ];
+
 exports.createCategory = [
-  body("name")
-    .notEmpty()
-    .withMessage("Category name is required")
-    .isString()
-    .trim()
-    .isLength({ max: 50 })
-    .withMessage("Category name cannot be more than 50 characters"),
-  // Add validation for translations if needed
-  (req, res, next) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
-    }
-    next();
-  },
+    body("name")
+        .notEmpty()
+        .withMessage("Category name is required")
+        .isString()
+        .trim()
+        .isLength({ max: 50 })
+        .withMessage("Category name cannot be more than 50 characters"),
+
+    body("translations")
+        .isObject()
+        .withMessage("Translations must be an object"),
+
+    body("translations.en")
+        .isObject()
+        .withMessage("English translation must be an object"),
+
+    body("translations.en.name")
+        .notEmpty()
+        .withMessage("English name is required")
+        .isString()
+        .trim()
+        .isLength({ max: 50 })
+        .withMessage("English name cannot be more than 50 characters"),
+
+    body("translations.ar")
+        .isObject()
+        .withMessage("Arabic translation must be an object"),
+
+    body("translations.ar.name")
+        .notEmpty()
+        .withMessage("Arabic name is required")
+        .isString()
+        .trim()
+        .isLength({ max: 50 })
+        .withMessage("Arabic name cannot be more than 50 characters"),
+
+    (req, res, next) => {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
+        }
+        next();
+    },
 ];
