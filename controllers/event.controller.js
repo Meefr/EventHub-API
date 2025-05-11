@@ -447,16 +447,16 @@ exports.getEventCategories = async (req, res, next) => {
 //   },
 // ];
 
-exports.createCategory = asyncHandler(async (req, res, next) => {
-    const { name, translations } = req.body;
+exports.createCategory = async (req, res, next) => {
+  const { name, translations } = req.body;
 
-    const category = await Category.create({
-        name,
-        translations
-    });
+  const category = await Category.create({
+    name,
+    translations,
+  });
 
-    res.status(201).json({
-        success: true,
-        data: category,
-    });
-});
+  res.status(201).json({
+    success: true,
+    data: category,
+  });
+};
