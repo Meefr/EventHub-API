@@ -6,6 +6,8 @@ const Booking = require("../models/Booking");
 const Category = require("../models/Category");
 const Tag = require("../models/Tag");
 const { ErrorResponse } = require("../middlewares/errorHandler");
+const { v4: uuidv4 } = require('uuid'); // For generating unique filenames
+
 // const logger = require('../utils/logger');
 
 /**
@@ -142,7 +144,7 @@ exports.getEvent = async (req, res, next) => {
  */
 exports.createEvent = async (req, res, next) => {
   try {
-    // Validate request
+    // Validate request body
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({ success: false, errors: errors.array() });
@@ -161,12 +163,9 @@ exports.createEvent = async (req, res, next) => {
 
     // Handle tags
     if (req.body.tags) {
-      // Convert string of IDs to array
       if (typeof req.body.tags === "string") {
         req.body.tags = req.body.tags.split(",");
       }
-
-      // Verify all tags exist
       for (const tagId of req.body.tags) {
         const tag = await Tag.findById(tagId);
         if (!tag) {
@@ -175,17 +174,41 @@ exports.createEvent = async (req, res, next) => {
       }
     }
 
-    const event = await Event.create(req.body);
+    let imageName = null;
+
+    // Handle image upload
+    if (req.file) {
+      const fileExt = path.extname(req.file.originalname);
+      imageName = `${uuidv4()}${fileExt}`;
+      const uploadPath = path.join(__dirname, "../uploads", imageName);
+
+      try {
+        await fs.rename(req.file.path, uploadPath); // Move the uploaded file to the uploads folder
+      } catch (error) {
+        console.error("Error saving image:", error);
+        return next(new ErrorResponse("Error saving the uploaded image", 500));
+      }
+    } else {
+      return next(
+        new ErrorResponse("Please upload an image for the event", 400)
+      );
+    }
+
+    // Create the event
+    const event = await Event.create({
+      ...req.body,
+      image: imageName, // Save the unique image name in the database
+    });
 
     res.status(201).json({
       success: true,
       data: event,
     });
   } catch (err) {
+    console.error("Error creating event:", err);
     next(err);
   }
 };
-
 /**
  * @desc    Update event
  * @route   PUT /api/v1/events/:id
@@ -418,7 +441,7 @@ exports.getUpcomingEvents = async (req, res, next) => {
 exports.getEventCategories = async (req, res, next) => {
   try {
     const categories = await Category.find();
-    
+
     res.status(200).json({
       success: true,
       count: categories.length,
