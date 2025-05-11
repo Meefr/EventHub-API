@@ -145,10 +145,10 @@ exports.getEvent = async (req, res, next) => {
 exports.createEvent = async (req, res, next) => {
   try {
     // Validate request body
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ success: false, errors: errors.array() });
-    }
+    // const errors = validationResult(req);
+    // if (!errors.isEmpty()) {
+    //   return res.status(400).json({ success: false, errors: errors.array() });
+    // }
 
     // Add user to req.body as organizer
     req.body.organizer = req.user.id;
