@@ -18,10 +18,6 @@ const EventSchema = new mongoose.Schema(
       type: String,
       required: [true, 'Please add a location']
     },
-    address: {
-      type: String,
-      required: [true, 'Please add an address']
-    },
     date: {
       type: Date,
       required: [true, 'Please add a date']
