@@ -67,10 +67,6 @@ const validators = {
       .trim()
       .notEmpty()
       .withMessage('Location is required'),
-    body('address')
-      .trim()
-      .notEmpty()
-      .withMessage('Address is required'),
     body('date')
       .notEmpty()
       .withMessage('Date is required')
