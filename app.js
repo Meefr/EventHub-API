@@ -93,10 +93,10 @@ app.use((req, res, next) => {
 // Error handling middleware
 app.use(errorHandler);
 
-// app.listen(process.env.PORT, () => {
-//   connectDB();
-//   console.log(
-//     `Server running in ${process.env.NODE_ENV} mode on port ${process.env.PORT}`
-//   );
-// });
+app.listen(process.env.PORT, () => {
+  connectDB();
+  console.log(
+    `Server running in ${process.env.NODE_ENV} mode on port ${process.env.PORT}`
+  );
+});
 module.exports = app;

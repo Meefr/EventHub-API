@@ -6,7 +6,7 @@ const { protect, authorize } = require('../middlewares/auth');
 const validators = require('../utils/validators');
 
 router.get('/', validators.pagination, validators.validate, eventController.getEvents);
-router.get('/:id', validators.validateId, validators.validate, eventController.getEvent);
+router.get('/event/:id', validators.validateId, validators.validate, eventController.getEvent);
 router.get('/organizer/:id', validators.validateId, validators.validate, eventController.getEventsByOrganizer);
 router.get('/featured', eventController.getFeaturedEvents);
 router.get('/upcoming', eventController.getUpcomingEvents);

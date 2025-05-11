@@ -10,21 +10,6 @@ const CategorySchema = new mongoose.Schema(
       trim: true,
       maxlength: [50, 'Category name cannot be more than 50 characters']
     },
-    slug: String,
-    description: {
-      type: String
-    },
-    icon: {
-      type: String
-    },
-    color: {
-      type: String,
-      default: '#3498db' // Default blue color
-    },
-    createdBy: {
-      type: mongoose.Schema.ObjectId,
-      ref: 'User'
-    },
     isActive: {
       type: Boolean,
       default: true

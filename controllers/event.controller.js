@@ -418,7 +418,7 @@ exports.getUpcomingEvents = async (req, res, next) => {
 exports.getEventCategories = async (req, res, next) => {
   try {
     const categories = await Category.find();
-
+    
     res.status(200).json({
       success: true,
       count: categories.length,
