@@ -6,11 +6,11 @@ const { protect, authorize } = require('../middlewares/auth');
 const validators = require('../utils/validators');
 
 router.get('/', validators.pagination, validators.validate, eventController.getEvents);
-router.get('/event/:id', validators.validateId, validators.validate, eventController.getEvent);
 router.get('/organizer/:id', validators.validateId, validators.validate, eventController.getEventsByOrganizer);
 router.get('/featured', eventController.getFeaturedEvents);
 router.get('/upcoming', eventController.getUpcomingEvents);
 router.get('/categories', eventController.getEventCategories); 
+router.get('/event/:id', validators.validateId, validators.validate, eventController.getEvent);
 // Protected routes
 router.post('/', protect, authorize('organizer', 'admin'), validators.createEvent, validators.validate, eventController.createEvent);
 router.put('/:id', protect, validators.validateId, validators.updateEvent, validators.validate, eventController.updateEvent);
