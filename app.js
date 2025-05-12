@@ -8,6 +8,7 @@ const i18next = require("i18next");
 const i18nextMiddleware = require("i18next-http-middleware");
 const dotenv = require("dotenv");
 dotenv.config( );
+
 // Import middleware
 const errorHandler = require("./middlewares/errorHandler");
 

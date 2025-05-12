@@ -1,6 +1,7 @@
 const { body, validationResult } = require("express-validator");
 const path = require("path");
 const fs = require("fs");
+const fsp = require('fs/promises');
 const Event = require("../models/Event");
 const Booking = require("../models/Booking");
 const Category = require("../models/Category");
@@ -137,6 +138,7 @@ exports.getEvent = async (req, res, next) => {
   }
 };
 
+
 /**
  * @desc    Create new event
  * @route   POST /api/v1/events
@@ -144,55 +146,53 @@ exports.getEvent = async (req, res, next) => {
  */
 exports.createEvent = async (req, res, next) => {
   try {
-
-    // Add user to req.body as organizer
+    // Attach logged-in user as organizer
     req.body.organizer = req.user.id;
 
-    // Handle category
+    // Validate category
     if (req.body.category) {
-      const category = await Category.findById(req.body.category);
-      if (!category) {
+      const categoryExists = await Category.findById(req.body.category);
+      if (!categoryExists) {
         return next(new ErrorResponse("Category not found", 404));
       }
     }
 
-    // Handle tags
+    // Validate tags
     if (req.body.tags) {
-      if (typeof req.body.tags === "string") {
-        req.body.tags = req.body.tags.split(",");
+      if (typeof req.body.tags === 'string') {
+        req.body.tags = req.body.tags.split(',');
       }
+
       for (const tagId of req.body.tags) {
-        const tag = await Tag.findById(tagId);
-        if (!tag) {
+        const tagExists = await Tag.findById(tagId);
+        if (!tagExists) {
           return next(new ErrorResponse(`Tag with id ${tagId} not found`, 404));
         }
       }
     }
 
-    let imageName = null;
-
     // Handle image upload
-    if (req.file) {
-      const fileExt = path.extname(req.file.originalname);
-      imageName = `${uuidv4()}${fileExt}`;
-      const uploadPath = path.join(__dirname, "../uploads", imageName);
-
-      try {
-        await fs.rename(req.file.path, uploadPath); // Move the uploaded file to the uploads folder
-      } catch (error) {
-        console.error("Error saving image:", error);
-        return next(new ErrorResponse("Error saving the uploaded image", 500));
-      }
-    } else {
-      return next(
-        new ErrorResponse("Please upload an image for the event", 400)
-      );
+    if (!req.file) {
+      return next(new ErrorResponse('Image file is required', 400));
     }
 
-    // Create the event
+    const fileExt = path.extname(req.file.originalname);
+    const imageName = `${uuidv4()}${fileExt}`;
+    const uploadDir = path.join(__dirname, '../uploads');
+    const imagePath = path.join(uploadDir, imageName);
+
+    // Ensure the uploads directory exists
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+
+    // Move the file to the uploads directory
+    await fsp.rename(req.file.path, imagePath);
+
+    // Create the event and save the image path
     const event = await Event.create({
       ...req.body,
-      image: imageName, // Save the unique image name in the database
+      image: `${req.protocol}://${req.get('host')}/uploads/${imageName}`,
     });
 
     res.status(201).json({
@@ -200,10 +200,80 @@ exports.createEvent = async (req, res, next) => {
       data: event,
     });
   } catch (err) {
-    console.error("Error creating event:", err);
+    console.error('Error creating event:', err);
     next(err);
   }
 };
+// /**
+//  * @desc    Create new event
+//  * @route   POST /api/v1/events
+//  * @access  Private
+//  */
+// exports.createEvent = async (req, res, next) => {
+//   try {
+//     // Attach logged-in user as organizer
+//     req.body.organizer = req.user.id;
+//     console.log(req.body);
+    
+//     // Validate category
+//     if (req.body.category) {
+//       const categoryExists = await Category.findById(req.body.category);
+//       if (!categoryExists) {
+//         return next(new ErrorResponse("Category not found", 404));
+//       }
+//     }
+
+//     // Validate tags
+//     if (req.body.tags) {
+//       if (typeof req.body.tags === 'string') {
+//         req.body.tags = req.body.tags.split(',');
+//       }
+
+//       for (const tagId of req.body.tags) {
+//         const tagExists = await Tag.findById(tagId);
+//         if (!tagExists) {
+//           return next(new ErrorResponse(`Tag with id ${tagId} not found`, 404));
+//         }
+//       }
+//     }
+
+//     // Handle image upload
+//     if (!req.file) {
+//       return next(new ErrorResponse('Image file is required', 400));
+//     }
+
+//     const fileExt = path.extname(req.file.originalname);
+//     const imageName = `${uuidv4()}${fileExt}`;
+//     const uploadDir = path.join(__dirname, '../uploads');
+//     const imagePath = path.join(uploadDir, imageName);
+//     console.log(imagePath);
+//     console.log(req.file.path);
+//     console.log(imageName);
+    
+    
+    
+//     try {
+//       await fs.rename(req.file.path, imagePath); // Move uploaded file
+//     } catch (err) {
+//       console.error('Failed to save uploaded image:', err);
+//       return next(new ErrorResponse('Error saving uploaded image', 500));
+//     }
+
+//     // Create event with image name
+//     const event = await Event.create({
+//       ...req.body,
+//       image: `${req.protocol}://${req.get('host')}/uploads/${imageName}`,
+//     });
+
+//     res.status(201).json({
+//       success: true,
+//       data: event,
+//     });
+//   } catch (err) {
+//     console.error('Error creating event:', err);
+//     next(err);
+//   }
+// };
 /**
  * @desc    Update event
  * @route   PUT /api/v1/events/:id
