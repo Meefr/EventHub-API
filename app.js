@@ -7,7 +7,7 @@ const compression = require("compression");
 const i18next = require("i18next");
 const i18nextMiddleware = require("i18next-http-middleware");
 const dotenv = require("dotenv");
-dotenv.config( );
+dotenv.config();
 
 // Import middleware
 const errorHandler = require("./middlewares/errorHandler");
@@ -38,18 +38,11 @@ i18next.init({
 
 // Body parser
 // Enable CORS
-app.use(
-  cors({
-    origin: process.env.CLIENT_URL, // Explicitly specify your frontend origin
-    credentials: true, // Allow credentials (cookies, authorization headers)
-  })
-);
+app.use(cors({ origin: "http://localhost:5173" }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 console.log(process.env.CLIENT_URL);
-
-
 
 // Security headers
 app.use(helmet());
