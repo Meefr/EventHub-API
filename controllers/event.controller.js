@@ -540,7 +540,8 @@ exports.deleteEvent = async (req, res, next) => {
       );
     }
 
-    await event.remove();
+    // Use deleteOne() instead of remove()
+    await Event.deleteOne({ _id: req.params.id });
 
     res.status(200).json({
       success: true,
