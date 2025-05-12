@@ -65,6 +65,8 @@ app.use(
     credentials: true,
   })
 );
+console.log(allowedOrigins);
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 

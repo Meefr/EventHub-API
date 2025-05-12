@@ -28,7 +28,8 @@ exports.createBooking = async (req, res, next) => {
     if (eventDoc.availableTickets < ticketCount) {
       return next(new ErrorResponse('Not enough tickets available', 400));
     }
-
+    eventDoc.availableTickets -= ticketCount;
+    await eventDoc.save();
     // Create booking
     const booking = await Booking.create({
       event,
@@ -117,11 +118,9 @@ exports.getBooking = async (req, res, next) => {
 exports.cancelBooking = async (req, res, next) => {
   try {
     const booking = await Booking.findById(req.params.id);
-
-    if (!booking) {
+    if (!booking ) {
       return next(new ErrorResponse(`Booking not found with id of ${req.params.id}`, 404));
     }
-
     // Make sure user owns the booking or is admin
     if (booking.user.toString() !== req.user.id && req.user.role !== 'admin') {
       return next(
@@ -131,15 +130,20 @@ exports.cancelBooking = async (req, res, next) => {
         )
       );
     }
+    const event = await Event.findById(booking.event);
+    if (!event) {
+      return next(new ErrorResponse(`Event not found with id of ${booking.event}`, 404));
+    }
 
     // Can only cancel pending or confirmed bookings
     if (booking.status === 'cancelled') {
       return next(new ErrorResponse('Booking is already cancelled', 400));
     }
 
+    event.availableTickets += booking.ticketCount;
+    await event.save();
     booking.status = 'cancelled';
     await booking.save();
-
     res.status(200).json({
       success: true,
       data: booking
