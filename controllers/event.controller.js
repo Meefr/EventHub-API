@@ -13,6 +13,7 @@ const {
   uploadToCloudinary,
   deleteFromCloudinary,
 } = require("../config/cloudinary");
+const { default: slugify } = require("slugify");
 // const logger = require('../utils/logger');
 
 /**
@@ -142,11 +143,42 @@ exports.getEvent = async (req, res, next) => {
     next(err);
   }
 };
-
 exports.createEvent = async (req, res, next) => {
   try {
-    // Attach logged-in user as organizer
     req.body.organizer = req.user.id;
+
+    // Step 1: Normalize tags
+    if (typeof req.body.tags === "string") {
+      req.body.tags = req.body.tags
+        .split(",")
+        .map((tag) => tag.trim())
+        .filter(Boolean);
+    }
+
+    if (Array.isArray(req.body.tags) && req.body.tags.length > 0) {
+      const inputTags = req.body.tags.map((tag) => tag.trim()).filter(Boolean);
+      const slugs = inputTags.map((tag) => slugify(tag, { lower: true }));
+
+      // Step 2: Find existing tags
+      const existingTags = await Tag.find({ slug: { $in: slugs } });
+      const existingTagSlugs = existingTags.map((tag) => tag.slug);
+
+      const tagsToCreate = slugs
+        .map((slug, idx) => ({ slug, name: inputTags[idx] }))
+        .filter((tag) => !existingTagSlugs.includes(tag.slug));
+
+      // Step 3: Create missing tags
+      const createdTags = await Tag.insertMany(
+        tagsToCreate.map((tag) => ({
+          name: tag.name,
+          slug: tag.slug,
+          createdBy: req.user.id, // Optional: track creator
+        }))
+      );
+
+      const allTags = [...existingTags, ...createdTags];
+      req.body.tags = allTags.map((tag) => tag._id);
+    }
 
     // Validate category
     if (req.body.category) {
@@ -156,28 +188,8 @@ exports.createEvent = async (req, res, next) => {
       }
     }
 
-    let imageUrl = "";
-
     // Handle image upload
-    // if (req.file) {
-    //   const fileExt = path.extname(req.file.originalname);
-    //   const imageName = `event-${uuidv4()}${fileExt}`;
-    //   const uploadsDir = path.join(__dirname, "../uploads");
-
-    //   // Ensure the uploads directory exists
-    //   if (!fs.existsSync(uploadsDir)) {
-    //     fs.mkdirSync(uploadsDir, { recursive: true });
-    //   }
-
-    //   // Full path for saving the file
-    //   const imagePath = path.join(uploadsDir, imageName);
-
-    //   // Move uploaded file to the uploads directory
-    //   fs.renameSync(req.file.path, imagePath);
-
-    //   // Construct image URL
-    //   imageUrl = `${req.protocol}://${req.get('host')}/uploads/${imageName}`;
-    // }
+    let imageUrl = "";
     if (req.file && req.file.buffer) {
       try {
         imageUrl = await uploadToCloudinary(req.file.buffer);
@@ -185,7 +197,8 @@ exports.createEvent = async (req, res, next) => {
         return next(cloudError);
       }
     }
-    // Create the event with image URL
+
+    // Create the event
     const event = await Event.create({
       ...req.body,
       image: imageUrl,
@@ -424,11 +437,11 @@ exports.getFeaturedEvents = async (req, res, next) => {
 
     // Execute query
     const events = await query;
-    
+
     // Get total count for pagination
-    const total = await Event.countDocuments({ 
-      isFeatured: true, 
-      isPublished: true 
+    const total = await Event.countDocuments({
+      isFeatured: true,
+      isPublished: true,
     });
 
     // Pagination result
@@ -557,7 +570,7 @@ exports.deleteEventCategory = async (req, res, next) => {
     if (eventUsingCategory) {
       return res.status(400).json({
         success: false,
-        message: 'Cannot delete category: It is used by existing events.',
+        message: "Cannot delete category: It is used by existing events.",
       });
     }
 
@@ -566,13 +579,13 @@ exports.deleteEventCategory = async (req, res, next) => {
     if (!deleted) {
       return res.status(404).json({
         success: false,
-        message: 'Category not found',
+        message: "Category not found",
       });
     }
 
     res.status(200).json({
       success: true,
-      message: 'Category deleted successfully',
+      message: "Category deleted successfully",
     });
   } catch (err) {
     next(err);
