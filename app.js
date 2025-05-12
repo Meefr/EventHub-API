@@ -44,9 +44,24 @@ i18next.init({
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 // Body parser
 // Enable CORS
+// app.use(
+//   cors({
+//     origin: process.env.CLIENT_URL,
+//     credentials: true,
+//   })
+// );
+const allowedOrigins = [process.env.CLIENT_URL, 'http://localhost:5173'];
+
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: function (origin, callback) {
+      // allow requests with no origin (like mobile apps or curl requests)
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+      return callback(new Error('Not allowed by CORS'));
+    },
     credentials: true,
   })
 );
