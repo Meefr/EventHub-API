@@ -27,24 +27,39 @@ router.get(
   eventController.getEvent
 );
 // Protected routes
-router.post(
-  "/",
-  protect,
-  authorize("organizer", "admin"),
-  upload.single("image"),
-  validators.createEvent,
-  validators.validate,
-  eventController.createEvent
-);
+// router.post(
+//   "/",
+//   protect,
+//   authorize("organizer", "admin"),
+//   upload.single("image"),
+//   validators.createEvent,
+//   validators.validate,
+//   eventController.createEvent
+// );
 
-router.put(
-  "/:id",
-  protect,
-  validators.validateId,
-  validators.updateEvent,
-  validators.validate,
-  eventController.updateEvent
-);
+router.route('/')
+  .post(
+    protect, 
+    authorize('organizer', 'admin'), 
+    upload.single('image'), 
+    eventController.createEvent
+  );
+
+router.route('/:id')
+  .put(
+    protect, 
+    authorize('organizer', 'admin'), 
+    upload.single('image'), 
+    eventController.updateEvent
+  );
+// router.put(
+//   "/:id",
+//   protect,
+//   validators.validateId,
+//   validators.updateEvent,
+//   validators.validate,
+//   eventController.updateEvent
+// );
 router.delete(
   "/:id",
   protect,
@@ -52,13 +67,13 @@ router.delete(
   validators.validate,
   eventController.deleteEvent
 );
-router.put(
-  "/:id/image",
-  protect,
-  validators.validateId,
-  upload.single("image"),
-  eventController.eventImageUpload
-);
+// router.put(
+//   "/:id/image",
+//   protect,
+//   validators.validateId,
+//   upload.single("image"),
+//   eventController.eventImageUpload
+// );
 
 router.post(
   "/categories",

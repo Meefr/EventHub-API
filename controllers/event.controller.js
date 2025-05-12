@@ -138,11 +138,6 @@ exports.getEvent = async (req, res, next) => {
   }
 };
 
-/**
- * @desc    Create new event
- * @route   POST /api/v1/events
- * @access  Private
- */
 exports.createEvent = async (req, res, next) => {
   try {
     // Attach logged-in user as organizer
@@ -156,52 +151,135 @@ exports.createEvent = async (req, res, next) => {
       }
     }
 
-    // Validate tags
-    if (req.body.tags) {
-      if (typeof req.body.tags === "string") {
-        req.body.tags = req.body.tags.split(",");
-      }
-
-      for (const tagId of req.body.tags) {
-        const tagExists = await Tag.findById(tagId);
-        if (!tagExists) {
-          return next(new ErrorResponse(`Tag with id ${tagId} not found`, 404));
-        }
-      }
-    }
-    let imageurl = ``;
+    let imageUrl = '';
 
     // Handle image upload
     if (req.file) {
       const fileExt = path.extname(req.file.originalname);
-      const imageName = `${uuidv4()}${fileExt}`;
-      const uploadDir = path.join(__dirname, "../uploads");
-      const imagePath = path.join(uploadDir, imageName);
+      const imageName = `event-${uuidv4()}${fileExt}`;
+      const uploadsDir = path.join(__dirname, "../uploads");
+      
       // Ensure the uploads directory exists
-      if (!fs.existsSync(uploadDir)) {
-        fs.mkdirSync(uploadDir, { recursive: true });
+      if (!fs.existsSync(uploadsDir)) {
+        fs.mkdirSync(uploadsDir, { recursive: true });
       }
 
-      // Move the file to the uploads directory
-      await fsp.rename(req.file.path, imagePath);
-      imageurl = `${req.protocol}://${req.get("host")}/uploads/${imageName}`;
+      // Full path for saving the file
+      const imagePath = path.join(uploadsDir, imageName);
+
+      // Move uploaded file to the uploads directory
+      fs.renameSync(req.file.path, imagePath);
+
+      // Construct image URL 
+      imageUrl = `${req.protocol}://${req.get('host')}/uploads/${imageName}`;
     }
 
-    // Create the event and save the image path
+    // Create the event with image URL
     const event = await Event.create({
       ...req.body,
-      image: imageurl,
+      image: imageUrl
     });
 
     res.status(201).json({
       success: true,
-      data: event,
+      data: event
     });
   } catch (err) {
     console.error("Error creating event:", err);
     next(err);
   }
 };
+
+exports.updateEvent = async (req, res, next) => {
+  try {
+    // Find existing event
+    const existingEvent = await Event.findById(req.params.id);
+    if (!existingEvent) {
+      return next(new ErrorResponse("Event not found", 404));
+    }
+
+    let imageUrl = existingEvent.image;
+
+    // Handle image upload
+    if (req.file) {
+      // Delete existing image if it exists
+      if (existingEvent.image) {
+        try {
+          // Extract the filename from the full URL
+          const oldImageFilename = path.basename(existingEvent.image);
+          const oldImagePath = path.join(__dirname, "../uploads", oldImageFilename);
+          
+          // Check if file exists before trying to delete
+          if (fs.existsSync(oldImagePath)) {
+            fs.unlinkSync(oldImagePath);
+          }
+        } catch (unlinkError) {
+          console.warn("Could not delete old image:", unlinkError);
+        }
+      }
+
+      // Process new image
+      const fileExt = path.extname(req.file.originalname);
+      const imageName = `event-${uuidv4()}${fileExt}`;
+      const uploadsDir = path.join(__dirname, "../uploads");
+      
+      // Ensure the uploads directory exists
+      if (!fs.existsSync(uploadsDir)) {
+        fs.mkdirSync(uploadsDir, { recursive: true });
+      }
+
+      // Full path for saving the file
+      const imagePath = path.join(uploadsDir, imageName);
+
+      // Move uploaded file to the uploads directory
+      fs.renameSync(req.file.path, imagePath);
+
+      // Construct new image URL 
+      imageUrl = `${req.protocol}://${req.get('host')}/uploads/${imageName}`;
+    }
+    console.log("Image URL:", imageUrl);
+    
+    // Prepare update data
+    const updateData = {
+      ...req.body,
+      // Only update image if a new one was uploaded
+      ...(imageUrl && { image: imageUrl })
+    };
+
+    // Update the event
+    const updatedEvent = await Event.findByIdAndUpdate(
+      req.params.id, 
+      updateData, 
+      { 
+        new: true, 
+        runValidators: true 
+      }
+    );
+
+    res.status(200).json({
+      success: true,
+      data: updatedEvent
+    });
+  } catch (err) {
+    console.error("Error updating event:", err);
+    
+    // If a file was uploaded but update failed, try to remove the uploaded file
+    if (req.file) {
+      try {
+        const failedUploadPath = path.join(__dirname, "../uploads", path.basename(req.file.path));
+        if (fs.existsSync(failedUploadPath)) {
+          fs.unlinkSync(failedUploadPath);
+        }
+      } catch (cleanupError) {
+        console.error("Error cleaning up failed upload:", cleanupError);
+      }
+    }
+
+    next(err);
+  }
+};
+
+
 // /**
 //  * @desc    Create new event
 //  * @route   POST /api/v1/events
@@ -211,7 +289,6 @@ exports.createEvent = async (req, res, next) => {
 //   try {
 //     // Attach logged-in user as organizer
 //     req.body.organizer = req.user.id;
-//     console.log(req.body);
 
 //     // Validate category
 //     if (req.body.category) {
@@ -223,8 +300,8 @@ exports.createEvent = async (req, res, next) => {
 
 //     // Validate tags
 //     if (req.body.tags) {
-//       if (typeof req.body.tags === 'string') {
-//         req.body.tags = req.body.tags.split(',');
+//       if (typeof req.body.tags === "string") {
+//         req.body.tags = req.body.tags.split(",");
 //       }
 
 //       for (const tagId of req.body.tags) {
@@ -234,31 +311,28 @@ exports.createEvent = async (req, res, next) => {
 //         }
 //       }
 //     }
+//     let imageurl = ``;
 
 //     // Handle image upload
-//     if (!req.file) {
-//       return next(new ErrorResponse('Image file is required', 400));
+//     if (req.file) {
+//       const fileExt = path.extname(req.file.originalname);
+//       const imageName = `${uuidv4()}${fileExt}`;
+//       const uploadDir = path.join(__dirname, "../uploads");
+//       const imagePath = path.join(uploadDir, imageName);
+//       // Ensure the uploads directory exists
+//       if (!fs.existsSync(uploadDir)) {
+//         fs.mkdirSync(uploadDir, { recursive: true });
+//       }
+
+//       // Move the file to the uploads directory
+//       await fsp.rename(req.file.path, imagePath);
+//       imageurl = `${req.protocol}://${req.get("host")}/uploads/${imageName}`;
 //     }
 
-//     const fileExt = path.extname(req.file.originalname);
-//     const imageName = `${uuidv4()}${fileExt}`;
-//     const uploadDir = path.join(__dirname, '../uploads');
-//     const imagePath = path.join(uploadDir, imageName);
-//     console.log(imagePath);
-//     console.log(req.file.path);
-//     console.log(imageName);
-
-//     try {
-//       await fs.rename(req.file.path, imagePath); // Move uploaded file
-//     } catch (err) {
-//       console.error('Failed to save uploaded image:', err);
-//       return next(new ErrorResponse('Error saving uploaded image', 500));
-//     }
-
-//     // Create event with image name
+//     // Create the event and save the image path
 //     const event = await Event.create({
 //       ...req.body,
-//       image: `${req.protocol}://${req.get('host')}/uploads/${imageName}`,
+//       image: imageurl,
 //     });
 
 //     res.status(201).json({
@@ -266,7 +340,7 @@ exports.createEvent = async (req, res, next) => {
 //       data: event,
 //     });
 //   } catch (err) {
-//     console.error('Error creating event:', err);
+//     console.error("Error creating event:", err);
 //     next(err);
 //   }
 // };
@@ -277,56 +351,143 @@ exports.createEvent = async (req, res, next) => {
  */
 exports.updateEvent = async (req, res, next) => {
   try {
-    let event = await Event.findById(req.params.id);
-
-    if (!event) {
-      return next(
-        new ErrorResponse(`Event not found with id of ${req.params.id}`, 404)
-      );
+    // Find existing event
+    const existingEvent = await Event.findById(req.params.id);
+    if (!existingEvent) {
+      return next(new ErrorResponse("Event not found", 404));
     }
 
-    // Make sure user is event organizer or admin
-    if (
-      event.organizer.toString() !== req.user.id &&
-      req.user.role !== "admin"
-    ) {
-      return next(
-        new ErrorResponse(
-          `User ${req.user.id} is not authorized to update this event`,
-          403
-        )
-      );
-    }
+    let imageUrl = existingEvent.image;
+    const deleteImage = req.body.deleteImage === 'true';
 
-    // Handle tags
-    if (req.body.tags) {
-      // Convert string of IDs to array
-      if (typeof req.body.tags === "string") {
-        req.body.tags = req.body.tags.split(",");
-      }
+    // Handle image deletion (explicit flag or new image upload)
+    if (req.file || deleteImage) {
+      if (existingEvent.image) {
+        try {
+          const oldImageFilename = path.basename(existingEvent.image);
+          const oldImagePath = path.join(__dirname, "../uploads", oldImageFilename);
 
-      // Verify all tags exist
-      for (const tagId of req.body.tags) {
-        const tag = await Tag.findById(tagId);
-        if (!tag) {
-          return next(new ErrorResponse(`Tag with id ${tagId} not found`, 404));
+          if (fs.existsSync(oldImagePath)) {
+            fs.unlinkSync(oldImagePath);
+          }
+        } catch (unlinkError) {
+          console.warn("Could not delete old image:", unlinkError);
+        }
+
+        // If explicitly deleting image and not uploading a new one
+        if (!req.file) {
+          imageUrl = undefined;
         }
       }
     }
 
-    event = await Event.findByIdAndUpdate(req.params.id, req.body, {
-      new: true,
-      runValidators: true,
-    });
+    // Handle new image upload
+    if (req.file) {
+      const fileExt = path.extname(req.file.originalname);
+      const imageName = `event-${uuidv4()}${fileExt}`;
+      const uploadsDir = path.join(__dirname, "../uploads");
+
+      if (!fs.existsSync(uploadsDir)) {
+        fs.mkdirSync(uploadsDir, { recursive: true });
+      }
+
+      const imagePath = path.join(uploadsDir, imageName);
+      fs.renameSync(req.file.path, imagePath);
+
+      imageUrl = `${req.protocol}://${req.get('host')}/uploads/${imageName}`;
+    }
+
+    console.log("Final image URL:", imageUrl);
+
+    // Prepare update data
+    const updateData = {
+      ...req.body,
+      ...(typeof imageUrl !== 'undefined' ? { image: imageUrl } : { $unset: { image: "" } })
+    };
+
+    // Update the event
+    const updatedEvent = await Event.findByIdAndUpdate(
+      req.params.id,
+      updateData,
+      {
+        new: true,
+        runValidators: true,
+      }
+    );
 
     res.status(200).json({
       success: true,
-      data: event,
+      data: updatedEvent,
     });
   } catch (err) {
+    console.error("Error updating event:", err);
+
+    if (req.file) {
+      try {
+        const failedUploadPath = path.join(__dirname, "../uploads", path.basename(req.file.path));
+        if (fs.existsSync(failedUploadPath)) {
+          fs.unlinkSync(failedUploadPath);
+        }
+      } catch (cleanupError) {
+        console.error("Error cleaning up failed upload:", cleanupError);
+      }
+    }
+
     next(err);
   }
 };
+// exports.updateEvent = async (req, res, next) => {
+//   try {
+//     let event = await Event.findById(req.params.id);
+
+//     if (!event) {
+//       return next(
+//         new ErrorResponse(`Event not found with id of ${req.params.id}`, 404)
+//       );
+//     }
+
+//     // Make sure user is event organizer or admin
+//     if (
+//       event.organizer.toString() !== req.user.id &&
+//       req.user.role !== "admin"
+//     ) {
+//       return next(
+//         new ErrorResponse(
+//           `User ${req.user.id} is not authorized to update this event`,
+//           403
+//         )
+//       );
+//     }
+
+//     // Handle tags
+//     if (req.body.tags) {
+//       // Convert string of IDs to array
+//       if (typeof req.body.tags === "string") {
+//         req.body.tags = req.body.tags.split(",");
+//       }
+
+//       // Verify all tags exist
+//       for (const tagId of req.body.tags) {
+//         const tag = await Tag.findById(tagId);
+//         if (!tag) {
+//           return next(new ErrorResponse(`Tag with id ${tagId} not found`, 404));
+//         }
+//       }
+//     }
+
+//     event = await Event.findByIdAndUpdate(req.params.id, req.body, {
+//       new: true,
+//       runValidators: true,
+//     });
+
+//     res.status(200).json({
+//       success: true,
+//       data: event,
+//     });
+//   } catch (err) {
+//     next(err);
+//   }
+// };
 
 /**
  * @desc    Delete event

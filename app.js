@@ -35,7 +35,7 @@ i18next.init({
     },
   },
 });
-
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 // Body parser
 // Enable CORS
 app.use(

@@ -1,57 +1,41 @@
-const path = require('path');
 const multer = require('multer');
-const { ErrorResponse } = require('./errorHandler');
+const path = require('path');
 const fs = require('fs');
+const { v4: uuidv4 } = require('uuid');
 
-// Ensure upload directory exists
-const uploadDir = process.env.UPLOAD_PATH || './uploads';
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
+// Ensure uploads directory exists
+const uploadsDir = path.join(__dirname, '../uploads');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
 }
 
-// Configure storage
+// Configure multer storage
 const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    const eventId = req.params.id || 'events';
-    const eventDir = path.join(uploadDir, eventId);
-    
-    // Create directory if it doesn't exist
-    if (!fs.existsSync(eventDir)) {
-      fs.mkdirSync(eventDir, { recursive: true });
-    }
-    
-    cb(null, eventDir);
+  destination: (req, file, cb) => {
+    cb(null, uploadsDir);
   },
-  filename: function (req, file, cb) {
-    // Create unique filename with original extension
-    const fileExt = path.extname(file.originalname);
-    cb(null, `${file.fieldname}-${Date.now()}${fileExt}`);
+  filename: (req, file, cb) => {
+    const uniqueSuffix = `event-${uuidv4()}${path.extname(file.originalname)}`;
+    cb(null, uniqueSuffix);
   }
 });
 
-// File filter - only allow specific image types
-const fileFilter = (req, file, cb) => {
-  const allowedTypes = /jpeg|jpg|png|gif|webp/;
-  
-  // Check extension
-  const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-  // Check mime type
-  const mimetype = allowedTypes.test(file.mimetype);
-
-  if (extname && mimetype) {
-    return cb(null, true);
-  } else {
-    cb(new ErrorResponse('Only image files are allowed', 400), false);
+// File filter for images
+const imageFilter = (req, file, cb) => {
+  // Accept image files only
+  if (!file.originalname.match(/\.(jpg|jpeg|png|gif|webp)$/i)) {
+    return cb(new Error('Only image files are allowed!'), false);
   }
+  cb(null, true);
 };
 
-// Configure multer
+// Configure multer upload
 const upload = multer({
   storage: storage,
+  fileFilter: imageFilter,
   limits: {
-    fileSize: parseInt(process.env.MAX_FILE_SIZE) || 5000000 // Default: 5MB
-  },
-  fileFilter: fileFilter
+    fileSize: 5 * 1024 * 1024 // 5MB file size limit
+  }
 });
 
 module.exports = upload;
