@@ -37,19 +37,21 @@ router.get(
 //   eventController.createEvent
 // );
 
-router.route('/')
+router
+  .route("/")
   .post(
-    protect, 
-    authorize('organizer', 'admin'), 
-    upload.single('image'), 
+    protect,
+    authorize("organizer", "admin"),
+    upload.single("image"),
     eventController.createEvent
   );
 
-router.route('/:id')
+router
+  .route("/:id")
   .put(
-    protect, 
-    authorize('organizer', 'admin'), 
-    upload.single('image'), 
+    protect,
+    authorize("organizer", "admin"),
+    upload.single("image"),
     eventController.updateEvent
   );
 // router.put(
@@ -83,5 +85,10 @@ router.post(
   validators.validate,
   eventController.createCategory
 );
-
+router.delete(
+  "/categories/:id",
+  protect,
+  authorize("admin"),
+  eventController.deleteEventCategory
+);
 module.exports = router;

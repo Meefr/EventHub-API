@@ -542,6 +542,42 @@ exports.getEventCategories = async (req, res, next) => {
     next(err);
   }
 };
+/**
+ * @desc    Get all categories
+ * @route   DELETE /api/v1/events/categories
+ * @access  Protected
+ */
+exports.deleteEventCategory = async (req, res, next) => {
+  try {
+    const categoryId = req.params.id;
+
+    // Check if any events are using this category
+    const eventUsingCategory = await Event.findOne({ category: categoryId });
+
+    if (eventUsingCategory) {
+      return res.status(400).json({
+        success: false,
+        message: 'Cannot delete category: It is used by existing events.',
+      });
+    }
+
+    const deleted = await Category.findByIdAndDelete(categoryId);
+
+    if (!deleted) {
+      return res.status(404).json({
+        success: false,
+        message: 'Category not found',
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Category deleted successfully',
+    });
+  } catch (err) {
+    next(err);
+  }
+};
 
 // exports.createCategory = [
 //   body("name")
