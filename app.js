@@ -12,6 +12,12 @@ dotenv.config();
 // Import middleware
 const errorHandler = require("./middlewares/errorHandler");
 
+// const cloudinary = require("cloudinary").v2;
+// cloudinary.config({
+//   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+//   api_key: process.env.CLOUDINARY_API_KEY,
+//   api_secret: process.env.CLOUDINARY_API_SECRET,
+// });
 // Import routes
 const authRoutes = require("./routes/auth");
 const eventRoutes = require("./routes/events");
@@ -35,7 +41,7 @@ i18next.init({
     },
   },
 });
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 // Body parser
 // Enable CORS
 app.use(
