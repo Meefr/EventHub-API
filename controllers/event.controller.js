@@ -1,13 +1,13 @@
 const { body, validationResult } = require("express-validator");
 const path = require("path");
 const fs = require("fs");
-const fsp = require('fs/promises');
+const fsp = require("fs/promises");
 const Event = require("../models/Event");
 const Booking = require("../models/Booking");
 const Category = require("../models/Category");
 const Tag = require("../models/Tag");
 const { ErrorResponse } = require("../middlewares/errorHandler");
-const { v4: uuidv4 } = require('uuid'); // For generating unique filenames
+const { v4: uuidv4 } = require("uuid"); // For generating unique filenames
 
 // const logger = require('../utils/logger');
 
@@ -138,7 +138,6 @@ exports.getEvent = async (req, res, next) => {
   }
 };
 
-
 /**
  * @desc    Create new event
  * @route   POST /api/v1/events
@@ -159,8 +158,8 @@ exports.createEvent = async (req, res, next) => {
 
     // Validate tags
     if (req.body.tags) {
-      if (typeof req.body.tags === 'string') {
-        req.body.tags = req.body.tags.split(',');
+      if (typeof req.body.tags === "string") {
+        req.body.tags = req.body.tags.split(",");
       }
 
       for (const tagId of req.body.tags) {
@@ -170,29 +169,28 @@ exports.createEvent = async (req, res, next) => {
         }
       }
     }
+    let imageurl = ``;
 
     // Handle image upload
-    if (!req.file) {
-      return next(new ErrorResponse('Image file is required', 400));
+    if (req.file) {
+      const fileExt = path.extname(req.file.originalname);
+      const imageName = `${uuidv4()}${fileExt}`;
+      const uploadDir = path.join(__dirname, "../uploads");
+      const imagePath = path.join(uploadDir, imageName);
+      // Ensure the uploads directory exists
+      if (!fs.existsSync(uploadDir)) {
+        fs.mkdirSync(uploadDir, { recursive: true });
+      }
+
+      // Move the file to the uploads directory
+      await fsp.rename(req.file.path, imagePath);
+      imageurl = `${req.protocol}://${req.get("host")}/uploads/${imageName}`;
     }
-
-    const fileExt = path.extname(req.file.originalname);
-    const imageName = `${uuidv4()}${fileExt}`;
-    const uploadDir = path.join(__dirname, '../uploads');
-    const imagePath = path.join(uploadDir, imageName);
-
-    // Ensure the uploads directory exists
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-
-    // Move the file to the uploads directory
-    await fsp.rename(req.file.path, imagePath);
 
     // Create the event and save the image path
     const event = await Event.create({
       ...req.body,
-      image: `${req.protocol}://${req.get('host')}/uploads/${imageName}`,
+      image: imageurl,
     });
 
     res.status(201).json({
@@ -200,7 +198,7 @@ exports.createEvent = async (req, res, next) => {
       data: event,
     });
   } catch (err) {
-    console.error('Error creating event:', err);
+    console.error("Error creating event:", err);
     next(err);
   }
 };
@@ -214,7 +212,7 @@ exports.createEvent = async (req, res, next) => {
 //     // Attach logged-in user as organizer
 //     req.body.organizer = req.user.id;
 //     console.log(req.body);
-    
+
 //     // Validate category
 //     if (req.body.category) {
 //       const categoryExists = await Category.findById(req.body.category);
@@ -249,9 +247,7 @@ exports.createEvent = async (req, res, next) => {
 //     console.log(imagePath);
 //     console.log(req.file.path);
 //     console.log(imageName);
-    
-    
-    
+
 //     try {
 //       await fs.rename(req.file.path, imagePath); // Move uploaded file
 //     } catch (err) {

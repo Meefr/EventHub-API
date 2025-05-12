@@ -37,12 +37,6 @@ i18next.init({
 });
 
 // Body parser
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
-console.log(process.env.CLIENT_URL);
-
-
 // Enable CORS
 app.use(
   cors({
@@ -50,6 +44,12 @@ app.use(
     credentials: true, // Allow credentials (cookies, authorization headers)
   })
 );
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+console.log(process.env.CLIENT_URL);
+
+
 
 // Security headers
 app.use(helmet());
