@@ -9,6 +9,10 @@ const Tag = require("../models/Tag");
 const { ErrorResponse } = require("../middlewares/errorHandler");
 const { v4: uuidv4 } = require("uuid"); // For generating unique filenames
 
+const {
+  uploadToCloudinary,
+  deleteFromCloudinary,
+} = require("../config/cloudinary");
 // const logger = require('../utils/logger');
 
 /**
@@ -151,38 +155,44 @@ exports.createEvent = async (req, res, next) => {
       }
     }
 
-    let imageUrl = '';
+    let imageUrl = "";
 
     // Handle image upload
-    if (req.file) {
-      const fileExt = path.extname(req.file.originalname);
-      const imageName = `event-${uuidv4()}${fileExt}`;
-      const uploadsDir = path.join(__dirname, "../uploads");
-      
-      // Ensure the uploads directory exists
-      if (!fs.existsSync(uploadsDir)) {
-        fs.mkdirSync(uploadsDir, { recursive: true });
+    // if (req.file) {
+    //   const fileExt = path.extname(req.file.originalname);
+    //   const imageName = `event-${uuidv4()}${fileExt}`;
+    //   const uploadsDir = path.join(__dirname, "../uploads");
+
+    //   // Ensure the uploads directory exists
+    //   if (!fs.existsSync(uploadsDir)) {
+    //     fs.mkdirSync(uploadsDir, { recursive: true });
+    //   }
+
+    //   // Full path for saving the file
+    //   const imagePath = path.join(uploadsDir, imageName);
+
+    //   // Move uploaded file to the uploads directory
+    //   fs.renameSync(req.file.path, imagePath);
+
+    //   // Construct image URL
+    //   imageUrl = `${req.protocol}://${req.get('host')}/uploads/${imageName}`;
+    // }
+    if (req.file && req.file.buffer) {
+      try {
+        imageUrl = await uploadToCloudinary(req.file.buffer);
+      } catch (cloudError) {
+        return next(cloudError);
       }
-
-      // Full path for saving the file
-      const imagePath = path.join(uploadsDir, imageName);
-
-      // Move uploaded file to the uploads directory
-      fs.renameSync(req.file.path, imagePath);
-
-      // Construct image URL 
-      imageUrl = `${req.protocol}://${req.get('host')}/uploads/${imageName}`;
     }
-
     // Create the event with image URL
     const event = await Event.create({
       ...req.body,
-      image: imageUrl
+      image: imageUrl,
     });
 
     res.status(201).json({
       success: true,
-      data: event
+      data: event,
     });
   } catch (err) {
     console.error("Error creating event:", err);
@@ -190,95 +200,103 @@ exports.createEvent = async (req, res, next) => {
   }
 };
 
-exports.updateEvent = async (req, res, next) => {
-  try {
-    // Find existing event
-    const existingEvent = await Event.findById(req.params.id);
-    if (!existingEvent) {
-      return next(new ErrorResponse("Event not found", 404));
-    }
 
-    let imageUrl = existingEvent.image;
+// exports.updateEvent = async (req, res, next) => {
+//   try {
+//     // Find existing event
+//     const existingEvent = await Event.findById(req.params.id);
+//     if (!existingEvent) {
+//       return next(new ErrorResponse("Event not found", 404));
+//     }
 
-    // Handle image upload
-    if (req.file) {
-      // Delete existing image if it exists
-      if (existingEvent.image) {
-        try {
-          // Extract the filename from the full URL
-          const oldImageFilename = path.basename(existingEvent.image);
-          const oldImagePath = path.join(__dirname, "../uploads", oldImageFilename);
-          
-          // Check if file exists before trying to delete
-          if (fs.existsSync(oldImagePath)) {
-            fs.unlinkSync(oldImagePath);
-          }
-        } catch (unlinkError) {
-          console.warn("Could not delete old image:", unlinkError);
-        }
-      }
+//     let imageUrl = existingEvent.image;
 
-      // Process new image
-      const fileExt = path.extname(req.file.originalname);
-      const imageName = `event-${uuidv4()}${fileExt}`;
-      const uploadsDir = path.join(__dirname, "../uploads");
-      
-      // Ensure the uploads directory exists
-      if (!fs.existsSync(uploadsDir)) {
-        fs.mkdirSync(uploadsDir, { recursive: true });
-      }
+//     // Handle image upload
+//     // if (req.file) {
+//     //   // Delete existing image if it exists
+//     //   if (existingEvent.image) {
+//     //     try {
+//     //       // Extract the filename from the full URL
+//     //       const oldImageFilename = path.basename(existingEvent.image);
+//     //       const oldImagePath = path.join(
+//     //         __dirname,
+//     //         "../uploads",
+//     //         oldImageFilename
+//     //       );
 
-      // Full path for saving the file
-      const imagePath = path.join(uploadsDir, imageName);
+//     //       // Check if file exists before trying to delete
+//     //       if (fs.existsSync(oldImagePath)) {
+//     //         fs.unlinkSync(oldImagePath);
+//     //       }
+//     //     } catch (unlinkError) {
+//     //       console.warn("Could not delete old image:", unlinkError);
+//     //     }
+//     //   }
 
-      // Move uploaded file to the uploads directory
-      fs.renameSync(req.file.path, imagePath);
+//     //   // Process new image
+//     //   const fileExt = path.extname(req.file.originalname);
+//     //   const imageName = `event-${uuidv4()}${fileExt}`;
+//     //   const uploadsDir = path.join(__dirname, "../uploads");
 
-      // Construct new image URL 
-      imageUrl = `${req.protocol}://${req.get('host')}/uploads/${imageName}`;
-    }
-    console.log("Image URL:", imageUrl);
-    
-    // Prepare update data
-    const updateData = {
-      ...req.body,
-      // Only update image if a new one was uploaded
-      ...(imageUrl && { image: imageUrl })
-    };
+//     //   // Ensure the uploads directory exists
+//     //   if (!fs.existsSync(uploadsDir)) {
+//     //     fs.mkdirSync(uploadsDir, { recursive: true });
+//     //   }
 
-    // Update the event
-    const updatedEvent = await Event.findByIdAndUpdate(
-      req.params.id, 
-      updateData, 
-      { 
-        new: true, 
-        runValidators: true 
-      }
-    );
+//     //   // Full path for saving the file
+//     //   const imagePath = path.join(uploadsDir, imageName);
 
-    res.status(200).json({
-      success: true,
-      data: updatedEvent
-    });
-  } catch (err) {
-    console.error("Error updating event:", err);
-    
-    // If a file was uploaded but update failed, try to remove the uploaded file
-    if (req.file) {
-      try {
-        const failedUploadPath = path.join(__dirname, "../uploads", path.basename(req.file.path));
-        if (fs.existsSync(failedUploadPath)) {
-          fs.unlinkSync(failedUploadPath);
-        }
-      } catch (cleanupError) {
-        console.error("Error cleaning up failed upload:", cleanupError);
-      }
-    }
+//     //   // Move uploaded file to the uploads directory
+//     //   fs.renameSync(req.file.path, imagePath);
 
-    next(err);
-  }
-};
+//     //   // Construct new image URL
+//     //   imageUrl = `${req.protocol}://${req.get("host")}/uploads/${imageName}`;
+//     // }
+//     console.log("Image URL:", imageUrl);
 
+//     // Prepare update data
+//     const updateData = {
+//       ...req.body,
+//       // Only update image if a new one was uploaded
+//       ...(imageUrl && { image: imageUrl }),
+//     };
+
+//     // Update the event
+//     const updatedEvent = await Event.findByIdAndUpdate(
+//       req.params.id,
+//       updateData,
+//       {
+//         new: true,
+//         runValidators: true,
+//       }
+//     );
+
+//     res.status(200).json({
+//       success: true,
+//       data: updatedEvent,
+//     });
+//   } catch (err) {
+//     console.error("Error updating event:", err);
+
+//     // If a file was uploaded but update failed, try to remove the uploaded file
+//     if (req.file) {
+//       try {
+//         const failedUploadPath = path.join(
+//           __dirname,
+//           "../uploads",
+//           path.basename(req.file.path)
+//         );
+//         if (fs.existsSync(failedUploadPath)) {
+//           fs.unlinkSync(failedUploadPath);
+//         }
+//       } catch (cleanupError) {
+//         console.error("Error cleaning up failed upload:", cleanupError);
+//       }
+//     }
+
+//     next(err);
+//   }
+// };
 
 // /**
 //  * @desc    Create new event
@@ -358,51 +376,44 @@ exports.updateEvent = async (req, res, next) => {
     }
 
     let imageUrl = existingEvent.image;
-    const deleteImage = req.body.deleteImage === 'true';
 
     // Handle image deletion (explicit flag or new image upload)
-    if (req.file || deleteImage) {
+    if (req.file) {
+      // Delete old image from Cloudinary if it exists
       if (existingEvent.image) {
-        try {
-          const oldImageFilename = path.basename(existingEvent.image);
-          const oldImagePath = path.join(__dirname, "../uploads", oldImageFilename);
-
-          if (fs.existsSync(oldImagePath)) {
-            fs.unlinkSync(oldImagePath);
-          }
-        } catch (unlinkError) {
-          console.warn("Could not delete old image:", unlinkError);
-        }
-
-        // If explicitly deleting image and not uploading a new one
-        if (!req.file) {
-          imageUrl = undefined;
-        }
+        await deleteFromCloudinary(existingEvent.image);
       }
+
+      // Upload new image
+      const uploadResult = await uploadToCloudinary(req.file.buffer);
+      imageUrl = uploadResult;
+      // console.log("New image URL:", uploadResult);
     }
 
     // Handle new image upload
-    if (req.file) {
-      const fileExt = path.extname(req.file.originalname);
-      const imageName = `event-${uuidv4()}${fileExt}`;
-      const uploadsDir = path.join(__dirname, "../uploads");
+    // if (req.file) {
+    //   const fileExt = path.extname(req.file.originalname);
+    //   const imageName = `event-${uuidv4()}${fileExt}`;
+    //   const uploadsDir = path.join(__dirname, "../uploads");
 
-      if (!fs.existsSync(uploadsDir)) {
-        fs.mkdirSync(uploadsDir, { recursive: true });
-      }
+    //   if (!fs.existsSync(uploadsDir)) {
+    //     fs.mkdirSync(uploadsDir, { recursive: true });
+    //   }
 
-      const imagePath = path.join(uploadsDir, imageName);
-      fs.renameSync(req.file.path, imagePath);
+    //   const imagePath = path.join(uploadsDir, imageName);
+    //   fs.renameSync(req.file.path, imagePath);
 
-      imageUrl = `${req.protocol}://${req.get('host')}/uploads/${imageName}`;
-    }
+    //   imageUrl = `${req.protocol}://${req.get("host")}/uploads/${imageName}`;
+    // }
 
     console.log("Final image URL:", imageUrl);
 
     // Prepare update data
     const updateData = {
       ...req.body,
-      ...(typeof imageUrl !== 'undefined' ? { image: imageUrl } : { $unset: { image: "" } })
+      ...(typeof imageUrl !== "undefined"
+        ? { image: imageUrl }
+        : { $unset: { image: "" } }),
     };
 
     // Update the event
@@ -424,7 +435,11 @@ exports.updateEvent = async (req, res, next) => {
 
     if (req.file) {
       try {
-        const failedUploadPath = path.join(__dirname, "../uploads", path.basename(req.file.path));
+        const failedUploadPath = path.join(
+          __dirname,
+          "../uploads",
+          path.basename(req.file.path)
+        );
         if (fs.existsSync(failedUploadPath)) {
           fs.unlinkSync(failedUploadPath);
         }
