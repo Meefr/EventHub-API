@@ -151,7 +151,7 @@ exports.cancelBooking = async (req, res, next) => {
     event.availableTickets += booking.ticketCount;
     await event.save();
     // Delete the booking
-    await booking.remove();
+    await booking.deleteOne();
     res.status(200).json({
       success: true,
       data: booking,
