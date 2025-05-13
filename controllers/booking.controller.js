@@ -1,7 +1,7 @@
-const { validationResult } = require('express-validator');
-const Booking = require('../models/Booking');
-const Event = require('../models/Event');
-const { ErrorResponse } = require('../middlewares/errorHandler');
+const { validationResult } = require("express-validator");
+const Booking = require("../models/Booking");
+const Event = require("../models/Event");
+const { ErrorResponse } = require("../middlewares/errorHandler");
 // const logger = require('../utils/logger');
 
 /**
@@ -22,11 +22,11 @@ exports.createBooking = async (req, res, next) => {
     // Check if event exists and has available tickets
     const eventDoc = await Event.findById(event);
     if (!eventDoc) {
-      return next(new ErrorResponse('Event not found', 404));
+      return next(new ErrorResponse("Event not found", 404));
     }
 
     if (eventDoc.availableTickets < ticketCount) {
-      return next(new ErrorResponse('Not enough tickets available', 400));
+      return next(new ErrorResponse("Not enough tickets available", 400));
     }
     eventDoc.availableTickets -= ticketCount;
     await eventDoc.save();
@@ -35,12 +35,12 @@ exports.createBooking = async (req, res, next) => {
       event,
       user: req.user.id,
       ticketCount,
-      specialRequests
+      specialRequests,
     });
 
     res.status(201).json({
       success: true,
-      data: booking
+      data: booking,
     });
   } catch (err) {
     next(err);
@@ -54,16 +54,15 @@ exports.createBooking = async (req, res, next) => {
  */
 exports.getUserBookings = async (req, res, next) => {
   try {
-    const bookings = await Booking.find({ user: req.user.id })
-      .populate({
-        path: 'event',
-        select: 'title date location image'
-      });
+    const bookings = await Booking.find({ user: req.user.id }).populate({
+      path: "event",
+      select: "title date location image",
+    });
 
     res.status(200).json({
       success: true,
       count: bookings.length,
-      data: bookings
+      data: bookings,
     });
   } catch (err) {
     next(err);
@@ -79,20 +78,25 @@ exports.getBooking = async (req, res, next) => {
   try {
     const booking = await Booking.findById(req.params.id)
       .populate({
-        path: 'event',
-        select: 'title date location image'
+        path: "event",
+        select: "title date location image",
       })
       .populate({
-        path: 'user',
-        select: 'name email'
+        path: "user",
+        select: "name email",
       });
 
     if (!booking) {
-      return next(new ErrorResponse(`Booking not found with id of ${req.params.id}`, 404));
+      return next(
+        new ErrorResponse(`Booking not found with id of ${req.params.id}`, 404)
+      );
     }
 
     // Make sure user owns the booking or is admin
-    if (booking.user._id.toString() !== req.user.id && req.user.role !== 'admin') {
+    if (
+      booking.user._id.toString() !== req.user.id &&
+      req.user.role !== "admin"
+    ) {
       return next(
         new ErrorResponse(
           `User ${req.user.id} is not authorized to access this booking`,
@@ -103,7 +107,7 @@ exports.getBooking = async (req, res, next) => {
 
     res.status(200).json({
       success: true,
-      data: booking
+      data: booking,
     });
   } catch (err) {
     next(err);
@@ -118,11 +122,13 @@ exports.getBooking = async (req, res, next) => {
 exports.cancelBooking = async (req, res, next) => {
   try {
     const booking = await Booking.findById(req.params.id);
-    if (!booking ) {
-      return next(new ErrorResponse(`Booking not found with id of ${req.params.id}`, 404));
+    if (!booking) {
+      return next(
+        new ErrorResponse(`Booking not found with id of ${req.params.id}`, 404)
+      );
     }
     // Make sure user owns the booking or is admin
-    if (booking.user.toString() !== req.user.id && req.user.role !== 'admin') {
+    if (booking.user.toString() !== req.user.id && req.user.role !== "admin") {
       return next(
         new ErrorResponse(
           `User ${req.user.id} is not authorized to cancel this booking`,
@@ -132,21 +138,23 @@ exports.cancelBooking = async (req, res, next) => {
     }
     const event = await Event.findById(booking.event);
     if (!event) {
-      return next(new ErrorResponse(`Event not found with id of ${booking.event}`, 404));
+      return next(
+        new ErrorResponse(`Event not found with id of ${booking.event}`, 404)
+      );
     }
 
     // Can only cancel pending or confirmed bookings
-    if (booking.status === 'cancelled') {
-      return next(new ErrorResponse('Booking is already cancelled', 400));
+    if (booking.status === "cancelled") {
+      return next(new ErrorResponse("Booking is already cancelled", 400));
     }
 
     event.availableTickets += booking.ticketCount;
     await event.save();
-    booking.status = 'cancelled';
-    await booking.save();
+    // Delete the booking
+    await booking.remove();
     res.status(200).json({
       success: true,
-      data: booking
+      data: booking,
     });
   } catch (err) {
     next(err);
