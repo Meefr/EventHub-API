@@ -234,24 +234,7 @@ exports.updateEvent = async (req, res, next) => {
       // Upload new image
       const uploadResult = await uploadToCloudinary(req.file.buffer);
       imageUrl = uploadResult;
-      // console.log("New image URL:", uploadResult);
     }
-
-    // Handle new image upload
-    // if (req.file) {
-    //   const fileExt = path.extname(req.file.originalname);
-    //   const imageName = `event-${uuidv4()}${fileExt}`;
-    //   const uploadsDir = path.join(__dirname, "../uploads");
-
-    //   if (!fs.existsSync(uploadsDir)) {
-    //     fs.mkdirSync(uploadsDir, { recursive: true });
-    //   }
-
-    //   const imagePath = path.join(uploadsDir, imageName);
-    //   fs.renameSync(req.file.path, imagePath);
-
-    //   imageUrl = `${req.protocol}://${req.get("host")}/uploads/${imageName}`;
-    // }
 
     console.log("Final image URL:", imageUrl);
 
@@ -262,6 +245,63 @@ exports.updateEvent = async (req, res, next) => {
         ? { image: imageUrl }
         : { $unset: { image: "" } }),
     };
+
+    // Process tags similar to createEvent
+    if (typeof updateData.tags === "string") {
+      updateData.tags = updateData.tags
+        .split(",")
+        .map((tag) => tag.trim())
+        .filter(Boolean);
+    }
+
+    if (updateData.tags !== undefined) {
+      // If tags is empty array or empty string, set it to empty array
+      if (
+        (Array.isArray(updateData.tags) && updateData.tags.length === 0) ||
+        updateData.tags === ""
+      ) {
+        updateData.tags = [];
+      }
+      // Process tags if they exist and are not empty
+      else if (Array.isArray(updateData.tags) && updateData.tags.length > 0) {
+        const inputTags = updateData.tags.map((tag) => tag.trim()).filter(Boolean);
+        
+        // Skip processing if no valid tags after filtering
+        if (inputTags.length === 0) {
+          updateData.tags = [];
+        } else {
+          const slugs = inputTags.map((tag) => slugify(tag, { lower: true }));
+
+          // Find existing tags
+          const existingTags = await Tag.find({ slug: { $in: slugs } });
+          const existingTagSlugs = existingTags.map((tag) => tag.slug);
+
+          const tagsToCreate = slugs
+            .map((slug, idx) => ({ slug, name: inputTags[idx] }))
+            .filter((tag) => !existingTagSlugs.includes(tag.slug));
+
+          // Create missing tags
+          const createdTags = await Tag.insertMany(
+            tagsToCreate.map((tag) => ({
+              name: tag.name,
+              slug: tag.slug,
+              createdBy: req.user.id,
+            }))
+          );
+
+          const allTags = [...existingTags, ...createdTags];
+          updateData.tags = allTags.map((tag) => tag._id);
+        }
+      }
+    }
+
+    // Validate category
+    if (updateData.category) {
+      const categoryExists = await Category.findById(updateData.category);
+      if (!categoryExists) {
+        return next(new ErrorResponse("Category not found", 404));
+      }
+    }
 
     // Update the event
     const updatedEvent = await Event.findByIdAndUpdate(
@@ -298,6 +338,7 @@ exports.updateEvent = async (req, res, next) => {
     next(err);
   }
 };
+
 /**
  * @desc    Delete event
  * @route   DELETE /api/v1/events/:id
